@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: 16
 
+      - name: Install lftp
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
       # 5. Instale dependências usando Yarn
       - name: Install dependencies
         run: yarn install

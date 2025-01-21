@@ -8,6 +8,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       # 1. Faça o checkout do código
       - name: Checkout code
@@ -26,20 +27,47 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      # 4. Gere o arquivo de ambiente dinâmico
+      # 4. Verifique a versão atual
+      - name: Get current version
+        id: current_version
+        run: |
+          echo "version=$(jq -r .version package.json)" >> $GITHUB_ENV
+
+      # 5. Obtenha a última versão publicada no Git
+      - name: Get latest Git tag
+        id: latest_tag
+        run: |
+          git fetch --tags
+          echo "latest_tag=$(git describe --tags --abbrev=0 || echo '0.0.0')" >> $GITHUB_ENV
+
+      # 6. Compare as versões
+      - name: Compare versions
+        id: compare_versions
+        run: |
+          if [ "$version" != "$latest_tag" ]; then
+            echo "New version detected: $version (Previous: $latest_tag)"
+            echo "deploy=true" >> $GITHUB_ENV
+          else
+            echo "No new version detected. Skipping deploy."
+            echo "deploy=false" >> $GITHUB_ENV
+
+      # 7. Gere o arquivo de ambiente dinâmico
       - name: Generate environment file
+        if: env.deploy == 'true'
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           echo "API_KEY=${API_KEY}" > .env
           yarn build-env
 
-      # 5. Gere o build do projeto
+      # 8. Gere o build do projeto
       - name: Build project
+        if: env.deploy == 'true'
         run: yarn build
 
-      # 6. Deploy para a Hostinger via FTP
+      # 9. Deploy para a Hostinger via FTP
       - name: Deploy to Hostinger
+        if: env.deploy == 'true'
         env:
           HOSTINGER_FTP_SERVER: ${{ secrets.FTP_SERVER }}
           HOSTINGER_FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -50,3 +78,12 @@ jobs:
           mirror -R ./dist/corretor/ /public_html/
           bye
           "
+
+      # 10. Crie a nova tag (somente se for deploy)
+      - name: Create new Git tag
+        if: env.deploy == 'true'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag $version
+          git push origin $version

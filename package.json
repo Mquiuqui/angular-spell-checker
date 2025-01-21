@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "yarn build-env && ng serve",
+    "build": "yarn build-env && ng build",
+    "build-env": "node scripts/set-env.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -21,6 +22,7 @@
     "@types/nspell": "^2.1.6",
     "dictionary-pt": "^4.0.0",
     "dictionary-pt-br": "^3.0.0",
+    "dotenv": "^16.4.7",
     "fs": "^0.0.1-security",
     "nspell": "^2.1.5",
     "rxjs": "~7.5.0",

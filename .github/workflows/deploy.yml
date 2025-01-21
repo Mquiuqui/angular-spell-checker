@@ -1,0 +1,48 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Faça o checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Instale Node.js e Yarn
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      # 3. Instale dependências usando Yarn
+      - name: Install dependencies
+        run: yarn install
+
+      # 4. Gere o arquivo de ambiente dinâmico
+      - name: Generate environment file
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "API_KEY=${API_KEY}" > .env
+          yarn build-env
+
+      # 5. Gere o build do projeto
+      - name: Build project
+        run: yarn build --prod
+
+      # 6. Deploy para a Hostinger via FTP
+      - name: Deploy to Hostinger
+        env:
+          HOSTINGER_FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          HOSTINGER_FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          HOSTINGER_FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          lftp -u $HOSTINGER_FTP_USERNAME,$HOSTINGER_FTP_PASSWORD $HOSTINGER_FTP_SERVER -e "
+          mirror -R ./dist/ /path/to/hostinger/public_html/
+          bye
+          "

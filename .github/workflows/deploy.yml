@@ -47,6 +47,6 @@ jobs:
         run: |
           lftp -u $HOSTINGER_FTP_USERNAME,$HOSTINGER_FTP_PASSWORD $HOSTINGER_FTP_SERVER -e "
           set ssl:verify-certificate no;
-          mirror -R ./dist/ /public_html/
+          mirror -R ./dist/corretor/ /public_html/
           bye
           "

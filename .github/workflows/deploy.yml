@@ -2,8 +2,8 @@ name: Deploy to Hostinger
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*" # Escuta apenas eventos de tags que começam com "v"
 
 jobs:
   build-and-deploy:
@@ -14,65 +14,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Instale Node.js e Yarn
+      # 2. Obtenha a tag atual
+      - name: Get current tag
+        id: current_tag
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          echo "current_tag=$tag" >> $GITHUB_ENV
+
+      # 3. Exiba a tag para verificação
+      - name: Display tag
+        run: |
+          echo "Deploying version $current_tag"
+
+      # 4. Instale Node.js e Yarn
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
 
-      # 3. Instale dependências usando Yarn
+      # 5. Instale dependências usando Yarn
       - name: Install dependencies
         run: yarn install
 
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-
-      # 4. Obtenha a versão atual do `package.json`
-      - name: Get current version
-        id: current_version
-        run: |
-          version=$(jq -r .version package.json)
-          echo "version=$version" >> $GITHUB_ENV
-
-      # 5. Obtenha a última tag publicada
-      - name: Get latest Git tag
-        id: latest_tag
-        run: |
-          git fetch --tags
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
-
-      # 6. Compare versões
-      - name: Compare versions
-        id: compare_versions
-        run: |
-          echo "Current version: $version"
-          echo "Latest tag: $latest_tag"
-          if [ "$version" != "$latest_tag" ]; then
-            echo "New version detected. Proceeding with deploy."
-            echo "deploy=true" >> $GITHUB_ENV
-          else
-            echo "No new version detected. Skipping deploy."
-            echo "deploy=false" >> $GITHUB_ENV
-          fi
-
-      # 7. Gere o arquivo de ambiente dinâmico
-      - name: Generate environment file
-        if: env.deploy == 'true'
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-        run: |
-          echo "API_KEY=${API_KEY}" > .env
-          yarn build-env
-
-      # 8. Gere o build do projeto
+      # 6. Gere o build do projeto
       - name: Build project
-        if: env.deploy == 'true'
         run: yarn build
 
-      # 9. Deploy para a Hostinger via FTP
+      # 7. Deploy para a Hostinger via FTP
       - name: Deploy to Hostinger
-        if: env.deploy == 'true'
         env:
           HOSTINGER_FTP_SERVER: ${{ secrets.FTP_SERVER }}
           HOSTINGER_FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -80,15 +49,6 @@ jobs:
         run: |
           lftp -u $HOSTINGER_FTP_USERNAME,$HOSTINGER_FTP_PASSWORD $HOSTINGER_FTP_SERVER -e "
           set ssl:verify-certificate no;
-          mirror -R ./dist/corretor/ /public_html/
+          mirror -R ./dist/ /public_html/
           bye
           "
-
-      # 10. Crie uma nova tag
-      - name: Create new Git tag
-        if: env.deploy == 'true'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag $version
-          git push origin $version

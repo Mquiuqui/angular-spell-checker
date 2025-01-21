@@ -27,27 +27,29 @@ jobs:
       - name: Install lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      # 4. Verifique a versão atual
+      # 4. Obtenha a versão atual do `package.json`
       - name: Get current version
         id: current_version
         run: |
           version=$(jq -r .version package.json)
           echo "version=$version" >> $GITHUB_ENV
 
-      # 5. Obtenha a última versão publicada no Git
+      # 5. Obtenha a última tag publicada
       - name: Get latest Git tag
         id: latest_tag
         run: |
           git fetch --tags
-          latest_tag=$(git describe --tags --abbrev=0 || echo "0.0.0")
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
           echo "latest_tag=$latest_tag" >> $GITHUB_ENV
 
-      # 6. Compare as versões
+      # 6. Compare versões
       - name: Compare versions
         id: compare_versions
         run: |
+          echo "Current version: $version"
+          echo "Latest tag: $latest_tag"
           if [ "$version" != "$latest_tag" ]; then
-            echo "New version detected: $version (Previous: $latest_tag)"
+            echo "New version detected. Proceeding with deploy."
             echo "deploy=true" >> $GITHUB_ENV
           else
             echo "No new version detected. Skipping deploy."
@@ -81,7 +83,7 @@ jobs:
           bye
           "
 
-      # 10. Crie a nova tag (somente se for deploy)
+      # 10. Crie uma nova tag
       - name: Create new Git tag
         if: env.deploy == 'true'
         run: |

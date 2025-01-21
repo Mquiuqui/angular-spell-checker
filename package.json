@@ -7,7 +7,10 @@
     "build": "yarn build-env && ng build",
     "build-env": "node scripts/set-env.js",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "release:patch": "yarn version --new-version patch && git push origin main --tags",
+    "release:minor": "yarn version --new-version minor && git push origin main --tags",
+    "release:major": "yarn version --new-version major && git push origin main --tags"
   },
   "private": true,
   "dependencies": {

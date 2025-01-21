@@ -31,14 +31,16 @@ jobs:
       - name: Get current version
         id: current_version
         run: |
-          echo "version=$(jq -r .version package.json)" >> $GITHUB_ENV
+          version=$(jq -r .version package.json)
+          echo "version=$version" >> $GITHUB_ENV
 
       # 5. Obtenha a última versão publicada no Git
       - name: Get latest Git tag
         id: latest_tag
         run: |
           git fetch --tags
-          echo "latest_tag=$(git describe --tags --abbrev=0 || echo '0.0.0')" >> $GITHUB_ENV
+          latest_tag=$(git describe --tags --abbrev=0 || echo "0.0.0")
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
 
       # 6. Compare as versões
       - name: Compare versions

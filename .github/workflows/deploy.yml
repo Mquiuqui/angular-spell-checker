@@ -46,6 +46,7 @@ jobs:
           HOSTINGER_FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           lftp -u $HOSTINGER_FTP_USERNAME,$HOSTINGER_FTP_PASSWORD $HOSTINGER_FTP_SERVER -e "
-          mirror -R ./dist/ /path/to/hostinger/public_html/
+          set ssl:verify-certificate no;
+          mirror -R ./dist/ /public_html/
           bye
           "

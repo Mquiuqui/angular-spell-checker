@@ -33,7 +33,7 @@ jobs:
 
       # 5. Gere o build do projeto
       - name: Build project
-        run: yarn build --prod
+        run: yarn build
 
       # 6. Deploy para a Hostinger via FTP
       - name: Deploy to Hostinger
